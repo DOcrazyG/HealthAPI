@@ -7,9 +7,10 @@ import asyncio
 import mimetypes
 import os
 from pathlib import Path
-from typing import Any, List
+from typing import List
 
 import aiohttp
+import aiofiles
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -23,18 +24,17 @@ async def predict_batch_image_async(
     url = f"{api_url}/api/v1/predict/batch"
     headers = {"accept": "application/json", "X-API-Key": api_key}
     form_data = aiohttp.FormData()
-    file_handles: List[Any] = []  # To collect opened file objects
 
     try:
         for image_path in image_list:
-            file_handle = open(image_path, "rb")
-            file_handles.append(file_handle)
-            form_data.add_field(
-                "files",
-                file_handle,
-                filename=Path(image_path).name,
-                content_type=mimetypes.guess_type(image_path)[0],
-            )
+            async with aiofiles.open(image_path, "rb") as fr:
+                content = await fr.read()
+                form_data.add_field(
+                    "files",
+                    content,
+                    filename=Path(image_path).name,
+                    content_type=mimetypes.guess_type(image_path)[0],
+                )
 
         async with aiohttp.ClientSession() as session:
             async with session.post(url, headers=headers, data=form_data) as response:
@@ -43,10 +43,6 @@ async def predict_batch_image_async(
                 return response_json
     except Exception as exc:
         raise exc
-    finally:
-        # Close all opened files
-        for f in file_handles:
-            f.close()
 
 
 if __name__ == "__main__":

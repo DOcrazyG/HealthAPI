@@ -21,9 +21,9 @@ def predict_single_image(
     """Make a single prediction request."""
     url = f"{api_url}/api/v1/predict"
     headers = {"accept": "application/json", "X-API-Key": api_key}
-    with open(image_path, "rb") as f:
+    with open(image_path, "rb") as fr:
         files: List[Tuple[str, Tuple[str, BinaryIO, str]]] = [
-            ("file", (Path(image_path).name, f, mimetypes.guess_type(image_path)[0] or ""))
+            ("file", (Path(image_path).name, fr, mimetypes.guess_type(image_path)[0] or ""))
         ]
         response = requests.post(url, headers=headers, files=files)
 
